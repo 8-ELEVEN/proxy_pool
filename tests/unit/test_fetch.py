@@ -63,11 +63,19 @@ class TestLoadModule:
         assert second is not None
 
     @patch("helper.fetch.os.path.getmtime", return_value=0)
-    @patch("helper.fetch.importlib.import_module", side_effect=ImportError("not found"))
-    def test_import_exception_returns_none(self, mock_import, mock_mtime):
+    @patch("helper.fetch.importlib")
+    def test_import_exception_returns_none(self, mock_importlib, mock_mtime):
         """import 失败 -> 返回 None"""
-        result = _load_module("fetcher.sources.nonexistent", "/fake/path.py")
-        assert result is None
+        mock_importlib.import_module.side_effect = ImportError("not found")
+        # 确保模块不在 sys.modules 中，避免走 reload 分支
+        mock_importlib.reload.side_effect = ImportError("not found")
+        saved = sys.modules.pop("fetcher.sources.nonexistent", None)
+        try:
+            result = _load_module("fetcher.sources.nonexistent", "/fake/path.py")
+            assert result is None
+        finally:
+            if saved is not None:
+                sys.modules["fetcher.sources.nonexistent"] = saved
 
 
 class TestDiscoverFetchers:

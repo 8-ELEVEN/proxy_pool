@@ -12,8 +12,19 @@
 """
 __author__ = 'JHao'
 
+import sys
 import pytest
 from unittest.mock import patch, MagicMock
+
+
+# apscheduler 依赖 pkg_resources，在 tox/uv 环境中可能缺失
+# 在 import 前 mock 掉，避免 collection 阶段报错
+_apscheduler_mock = MagicMock()
+sys.modules.setdefault("apscheduler", _apscheduler_mock)
+sys.modules.setdefault("apscheduler.schedulers", _apscheduler_mock.schedulers)
+sys.modules.setdefault("apscheduler.schedulers.blocking", _apscheduler_mock.schedulers.blocking)
+sys.modules.setdefault("apscheduler.executors", _apscheduler_mock.executors)
+sys.modules.setdefault("apscheduler.executors.pool", _apscheduler_mock.executors.pool)
 
 import helper.scheduler as scheduler_mod
 

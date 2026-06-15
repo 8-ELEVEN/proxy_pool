@@ -13,7 +13,9 @@
 __author__ = 'JHao'
 
 import pytest
+from unittest.mock import patch, MagicMock
 from helper.proxy import Proxy
+from api.proxyApi import JsonResponse
 
 
 @pytest.fixture
@@ -152,3 +154,38 @@ class TestCount:
         assert data["count"] == 0
         assert data["http_type"] == {}
         assert data["source"] == {}
+
+
+class TestRefresh:
+
+    def test_refresh_returns_success(self, client):
+        resp = client.get("/refresh/")
+        assert resp.status_code == 200
+        assert b"success" in resp.data
+
+
+class TestJsonResponse:
+
+    def test_force_type_with_dict(self, app):
+        """dict -> JSON Response"""
+        with app.app_context():
+            resp = JsonResponse.force_type({"key": "val"})
+            assert resp.content_type == "application/json"
+
+    def test_force_type_with_list(self, app):
+        """list -> JSON Response"""
+        with app.app_context():
+            resp = JsonResponse.force_type([1, 2, 3])
+            assert resp.content_type == "application/json"
+
+
+class TestRunFlask:
+
+    @patch("api.proxyApi.platform")
+    @patch("api.proxyApi.app")
+    def test_runflask_windows_path(self, mock_app, mock_platform):
+        """Windows 下调用 app.run()"""
+        mock_platform.system.return_value = "Windows"
+        from api.proxyApi import runFlask
+        runFlask()
+        mock_app.run.assert_called_once()
